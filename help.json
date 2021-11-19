@@ -5,5 +5,8 @@
     "--port                 ": "set port number",
     "--command              ": "command to run (shell by default)",
     "--auto-restart         ": "restart command on exit",
-    "--no-auto-restart      ": "do not restart command on exit"
+    "--no-auto-restart      ": "do not restart command on exit",
+    "--tls                  ": "tls/ssl mode",
+    "--tls_key              ": "tls/ssl key file path required for tls",
+    "--tls_cert             ": "tls/ssl cert file path required for tls"
 }

@@ -8,12 +8,15 @@ const args = require('yargs-parser')(process.argv.slice(2), {
         'help',
         'auto-restart',
         'path',
+        'tls',
     ],
     number: [
         'port',
     ],
     string: [
         'command',
+        'tls_key',
+        'tls_cert',
     ],
     alias: {
         help: 'h',
@@ -22,6 +25,9 @@ const args = require('yargs-parser')(process.argv.slice(2), {
     default: {
         'port': process.env.PORT | 1337,
         'auto-restart': true,
+        'tls': false,
+        'tls_key': '',
+        'tls_cert': '',
     },
 });
 
@@ -43,6 +49,9 @@ function main(args) {
         port: args.port,
         command: args.command,
         autoRestart: args.autoRestart,
+        tls: args.tls,
+        tls_key: args.tls_key,
+        tls_cert: args.tls_cert,
     });
 }
 
@@ -58,20 +67,31 @@ function start(options) {
         port,
         command,
         autoRestart,
+        tls,
+        tls_key,
+        tls_cert,
     } = options;
     
     check(port);
+
+    check(tls, tls_key, tls_cert);
     
     const DIR = __dirname + '/../';
     
     const gritty = require('../');
-    const http = require('http');
+    const https = require('https');
+    const fs = require( "fs");
     
     const express = require('express');
     const io = require('socket.io');
     
     const app = express();
-    const server = http.createServer(app);
+    const server = tls ? require('https').createServer({
+        key: fs.readFileSync(tls_key),
+        cert: fs.readFileSync(tls_cert),
+    },app) : require('http').createServer(app);
+
+    const url = tls ? `https://localhost:${port}`: `http://localhost:${port}`;
     
     const ip = process.env.IP || /* c9 */
               '0.0.0.0';
@@ -89,7 +109,7 @@ function start(options) {
     server.listen(port, ip)
         .on('error', squad(exit, getMessage));
     
-    console.log(`url: http://localhost:${port}`);
+    console.log(`url: ${url}`);
 }
 
 function help() {
@@ -112,6 +132,15 @@ function version() {
 function check(port) {
     if (isNaN(port))
         exit('port should be a number 0..65535');
+}
+
+function check(tls, tls_key, tls_cert) {
+    if (tls && tls_key=='')
+        exit('--tls_key is required when --tls is specified');
+    
+    if (tls && tls_cert=='')  {
+        exit('--tls_cert is required when --tls is specified');
+    }
 }
 
 function exit(msg) {
